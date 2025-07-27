@@ -21,7 +21,7 @@
 bool load_language(QApplication& a,const QString& locName)
 {
     static QTranslator tra;
-    if(tra.load("language/ckfonteditor_" + locName + ".qm"))
+    if(tra.load("translations/ckfonteditor_" + locName + ".qm"))
         return a.installTranslator(&tra);
     return false;
 }

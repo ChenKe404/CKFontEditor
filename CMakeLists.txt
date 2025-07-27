@@ -46,6 +46,12 @@ target_compile_definitions(CKFontEditor PRIVATE
     -DPRJ_REPOS="https://gitee.com/chenke404/ckfont-editor|https://github.com/ChenKe404/CKFontEditor.git"
 )
 
+if(WIN32)
+    set_target_properties(CKFontEditor PROPERTIES
+        LINK_FLAGS "/SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup"
+    )
+endif()
+
 # Translations
 qt_add_translations(CKFontEditor
     TS_FILES
