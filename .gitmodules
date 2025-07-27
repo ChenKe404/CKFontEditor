@@ -1,0 +1,3 @@
+[submodule "ckfont"]
+	path = ckfont
+	url = https://github.com/ChenKe404/ckfont.git

@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string notr="true">CKFontEditor</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>3</number>
+    </property>
+    <property name="topMargin">
+     <number>3</number>
+    </property>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <property name="topMargin">
+       <number>2</number>
+      </property>
+      <property name="bottomMargin">
+       <number>2</number>
+      </property>
+      <item>
+       <widget class="QLabel" name="lab_rate">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="text">
+         <string>倍率:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="cob_rate">
+        <property name="currentIndex">
+         <number>2</number>
+        </property>
+        <item>
+         <property name="text">
+          <string notr="true">1/4</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">1/2</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">2/1</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string notr="true">4/1</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lab_background">
+        <property name="text">
+         <string>背景色:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="ColorButton" name="btn_background">
+        <property name="minimumSize">
+         <size>
+          <width>60</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="lab_transparent">
+        <property name="text">
+         <string>字符透明色:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="ColorButton" name="btn_transparent">
+        <property name="minimumSize">
+         <size>
+          <width>60</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Policy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_preview">
+        <property name="text">
+         <string>预览</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>780</width>
+         <height>515</height>
+        </rect>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <property name="spacing">
+         <number>2</number>
+        </property>
+        <property name="leftMargin">
+         <number>2</number>
+        </property>
+        <property name="topMargin">
+         <number>2</number>
+        </property>
+        <property name="rightMargin">
+         <number>2</number>
+        </property>
+        <property name="bottomMargin">
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="FontListWidget" name="w_list" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>800</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menu_F">
+    <property name="title">
+     <string>文件(&amp;F)</string>
+    </property>
+    <widget class="QMenu" name="menu_I">
+     <property name="title">
+      <string>导入(I)</string>
+     </property>
+     <addaction name="act_bmfont"/>
+    </widget>
+    <addaction name="act_open"/>
+    <addaction name="separator"/>
+    <addaction name="act_save"/>
+    <addaction name="act_saveas"/>
+    <addaction name="separator"/>
+    <addaction name="menu_I"/>
+    <addaction name="separator"/>
+    <addaction name="act_close"/>
+   </widget>
+   <widget class="QMenu" name="menu">
+    <property name="title">
+     <string>帮助(&amp;H)</string>
+    </property>
+    <widget class="QMenu" name="menu_language">
+     <property name="title">
+      <string>语言</string>
+     </property>
+     <addaction name="act_chinese"/>
+    </widget>
+    <addaction name="menu_language"/>
+    <addaction name="act_about"/>
+   </widget>
+   <widget class="QMenu" name="menu_E">
+    <property name="title">
+     <string>编辑(&amp;E)</string>
+    </property>
+    <addaction name="act_info"/>
+    <addaction name="act_sort_asc"/>
+    <addaction name="act_sort_desc"/>
+   </widget>
+   <addaction name="menu_F"/>
+   <addaction name="menu_E"/>
+   <addaction name="menu"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="act_open">
+   <property name="text">
+    <string>打开(&amp;O)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="act_save">
+   <property name="text">
+    <string>保存(&amp;S)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
+   </property>
+  </action>
+  <action name="act_saveas">
+   <property name="text">
+    <string>另存为(&amp;A)</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+S</string>
+   </property>
+  </action>
+  <action name="act_bmfont">
+   <property name="text">
+    <string>BMFont (.fnt)</string>
+   </property>
+  </action>
+  <action name="act_about">
+   <property name="text">
+    <string>关于(&amp;A)</string>
+   </property>
+  </action>
+  <action name="act_close">
+   <property name="text">
+    <string>关闭当前字体(&amp;C)</string>
+   </property>
+  </action>
+  <action name="act_info">
+   <property name="text">
+    <string>字体信息</string>
+   </property>
+  </action>
+  <action name="act_sort_asc">
+   <property name="text">
+    <string>按编码升序排序</string>
+   </property>
+  </action>
+  <action name="act_sort_desc">
+   <property name="text">
+    <string>按编码降序排序</string>
+   </property>
+  </action>
+  <action name="act_chinese">
+   <property name="text">
+    <string notr="true">简体中文</string>
+   </property>
+   <property name="iconText">
+    <string notr="true">简体中文</string>
+   </property>
+   <property name="toolTip">
+    <string notr="true">简体中文</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ColorButton</class>
+   <extends>QPushButton</extends>
+   <header location="global">control/color_button.h</header>
+  </customwidget>
+  <customwidget>
+   <class>FontListWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">control/font_list_widget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
