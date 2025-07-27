@@ -43,7 +43,7 @@ target_compile_definitions(CKFontEditor PRIVATE
     -DPRJ_VERSION="${PROJECT_VERSION}"
     -DPRJ_LICENCE="MIT"
     -DPRJ_ARCH="${CMAKE_SYSTEM_PROCESSOR}"
-    -DPRJ_REPOS="https://gitee.com/chenke404/ckfont-editor|"
+    -DPRJ_REPOS="https://gitee.com/chenke404/ckfont-editor|https://github.com/ChenKe404/CKFontEditor.git"
 )
 
 # Translations
