@@ -13,16 +13,16 @@ DlgTexture::DlgTexture(const Font* fnt, QWidget *parent) :
     connect(ui->w_preview,&Canvas::scale,ui->spb_scale,&QDoubleSpinBox::setValue);
     connect(ui->btn_background,&ColorButton::colorChanged,ui->w_preview,&Canvas::setBackground);
     connect(ui->spb_page,&QSpinBox::valueChanged,[this](int value){
-        if(_data.texs.empty())
+        if(_data.imgs.empty())
             ui->spb_page->setValue(0);
         else if(value < 1)
             ui->spb_page->setValue(1);
-        else if(value > _data.texs.size())
-            ui->spb_page->setValue(_data.texs.size());
+        else if(value > _data.imgs.size())
+            ui->spb_page->setValue(_data.imgs.size());
         else
         {
-            ui->lab_page->setText(fmt_lab_page.arg(1).arg(_data.texs.size()));
-            ui->w_preview->setImage(_data.texs[value-1]);
+            ui->lab_page->setText(fmt_lab_page.arg(1).arg(_data.imgs.size()));
+            ui->w_preview->setImage(_data.imgs[value-1]);
         }
     });
     fmt_lab_page = ui->lab_page->text();
@@ -41,9 +41,9 @@ void DlgTexture::onCreate()
         ui->spb_height->value(),
         ui->spb_spacing->value()
         );
-    std::vector<void*> ptrs;
-    c.start(_font,_data.chrs,ptrs);
-    if(ptrs.empty())
+    auto& ft = _data.ft;
+    c.start(_font,ft);
+    if(ft.chrs().empty())
     {
         ui->w_preview->setImage(nullptr);
         ui->lab_page->setText(fmt_lab_page.arg(0).arg(0));
@@ -51,14 +51,14 @@ void DlgTexture::onCreate()
     }
     else
     {
-        _data.texs.clear();
-        _data.texs.reserve(ptrs.size());
-        for(auto& it : ptrs)
+        _data.imgs.clear();
+        _data.imgs.reserve(ft.pages().size());
+        for(auto& it : ft.pages())
         {
-            _data.texs.emplace_back(QSharedPointer<QImage>((QImage*)it));
+            _data.imgs.emplace_back(QSharedPointer<QImage>((QImage*)it));
         }
-        ui->w_preview->setImage(_data.texs.front());
-        ui->lab_page->setText(fmt_lab_page.arg(1).arg(_data.texs.size()));
+        ui->w_preview->setImage(_data.imgs.front());
+        ui->lab_page->setText(fmt_lab_page.arg(1).arg(_data.imgs.size()));
         ui->spb_page->setValue(1);
     }
 }

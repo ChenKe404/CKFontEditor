@@ -16,63 +16,6 @@
 
 #include <QWheelEvent>
 
-//////////////////////////////////
-/// Drawer
-
-void Drawer::perchar(int x,int y, const Font::Char*, const Font::DataPtr& d) const
-{
-    const auto bit32 = _font->header().flag & Font::FL_BIT32;
-    auto trans = _font->header().transparent;
-
-    std::vector<color> buf;
-    buf.reserve(d.w() * d.h());
-    for(int oy=0; oy<d.h(); ++oy)
-    {
-        for(int ox=0; ox<d.w(); ++ox)
-        {
-            auto color = d.get(ox,oy);
-            if(!bit32 && color == trans)
-                buf.push_back(0);
-            else
-                buf.push_back(mix(color,_mix,_multiply));
-        }
-    }
-    _p->drawImage(QPoint{x,y}, QImage((uint8_t*)buf.data(),d.w(),d.h(),QImage::Format_ARGB32));
-}
-
-void Drawer::setPainter(QPainter *p)
-{ _p = p; }
-
-void Drawer::setMultiply(bool yes)
-{ _multiply = yes; }
-
-/////////////////////////////////////////
-/// TextureDrawer
-
-void TextureDrawer::setTextureData(const TextureData *data)
-{
-    _data = data;
-}
-
-void TextureDrawer::perchar(int x, int y, const Font::Char *chr, const Font::DataPtr &d) const
-{
-    auto c = (TextureData::Char*)chr;
-    const auto& tex = _data->texs[c->page];
-
-    auto img = tex->copy(c->x,c->y,c->width,c->height);
-    for (int y = 0; y < img.height(); ++y)
-    {
-        QRgb* scanLine = reinterpret_cast<QRgb*>(img.scanLine(y));
-        for (int x = 0; x < img.width(); ++x)
-        {
-            auto& pix = scanLine[x];
-            auto color = mix(toCKColor(pix),_mix,_multiply);
-            pix = toQColor(color).rgba();
-        }
-    }
-}
-
-
 /////////////////////////////////////////
 /// DlgPreview
 
@@ -116,16 +59,14 @@ DlgPreview::DlgPreview(Font *font) :
         ui->lab_alpha->setText(QString::number(value));
     });
     connect(ui->chk_texture,&QCheckBox::checkStateChanged,this,[this](Qt::CheckState state){
-        _use_texture = state == Qt::Checked;
-        ui->btn_texture->setEnabled(_use_texture);
+        const auto checked = state == Qt::Checked;
+        ui->btn_texture->setEnabled(checked);
+        ui->widget->useTextureData(checked);
     });
     connect(ui->btn_texture,&QPushButton::clicked,this,[this,font](){
         DlgTexture dlg(font,this);
         if(dlg.exec() == QDialog::Accepted)
-        {
             ui->widget->setTextureData(std::move(dlg.data()));
-            ui->widget->useTextureData(ui->chk_texture->isChecked());
-        }
     });
     ui->chk_textbox->setChecked(true);
     ui->widget->showTextBox(true);
@@ -151,21 +92,21 @@ void DlgPreview::onAlign()
     uint8_t align = 0;
     auto i = ui->cob_align_h->currentIndex();
     switch (i) {
-    case 0: align |= Drawer::AL_LEFT;
+    case 0: align |= FontDrawer::AL_LEFT;
         break;
-    case 1: align |= Drawer::AL_HCENTER;
+    case 1: align |= FontDrawer::AL_HCENTER;
         break;
-    case 2: align |= Drawer::AL_RIGHT;
+    case 2: align |= FontDrawer::AL_RIGHT;
         break;
     }
 
     i = ui->cob_align_v->currentIndex();
     switch (i) {
-    case 0: align |= Drawer::AL_TOP;
+    case 0: align |= FontDrawer::AL_TOP;
         break;
-    case 1: align |= Drawer::AL_VCENTER;
+    case 1: align |= FontDrawer::AL_VCENTER;
         break;
-    case 2: align |= Drawer::AL_BOTTOM;
+    case 2: align |= FontDrawer::AL_BOTTOM;
         break;
     }
     ui->widget->setAlign(align);
@@ -180,29 +121,27 @@ PreviewWidget::PreviewWidget(QWidget *parent)
     _area(-1,-1),
     _use_texture_data(false)
 {
-    _opts.align = Drawer::AL_LEFT | Drawer::AL_BOTTOM;
+    _opts.align = FontDrawer::AL_LEFT | FontDrawer::AL_BOTTOM;
     setMouseTracking(true);
     setCursor(Qt::OpenHandCursor);
     _opts.spacingX = -1;
     _opts.spacingY = 0;
     setOrigin(0.5,0.5);
+    _drawer.setFontTexture(&_data.ft);
 }
 
 void PreviewWidget::draw(QPainter& p, bool transformed)
 {
     if(transformed)
     {
-        if(!_chrs.empty())
-        {
-            _drawer.setPainter(&p);
-            auto box = _drawer.draw(_chrs,0,0,_area.width(),_area.height(),_opts);
-            p.drawRect(QRect{
-                box.x,
-                box.y,
-                box.w,
-                box.h
-            });
-        }
+        _drawer.setPainter(&p);
+        auto box = _drawer.draw(0,0,_area.width(),_area.height(),_opts);
+        p.drawRect(QRect{
+            box.x,
+            box.y,
+            box.w,
+            box.h
+        });
     }
     else
     {
@@ -211,7 +150,7 @@ void PreviewWidget::draw(QPainter& p, bool transformed)
         // 文本外框
         if(_show_textbox)
         {
-            auto box = _drawer.measure(_chrs,_area.width(),_area.height(),_opts);
+            auto box = _drawer.measure(_area.width(),_area.height(),_opts);
             p.setPen({ 255-bkg.red(),255-bkg.green(),255-bkg.blue() });
             p.drawRect(QRectF{
                 box.x * _scale + op.x(),
@@ -255,7 +194,7 @@ void PreviewWidget::setText(const QString &text)
     auto temp = text;
     temp.replace("\\n","\n");
     temp.replace("\\t","\t");
-    _chrs = _font->css(temp.toStdU32String());
+    _drawer.setText(text);
     repaint();
 }
 
@@ -307,11 +246,13 @@ void PreviewWidget::setMultiply(bool yes)
 void PreviewWidget::setTextureData(TextureData &&data)
 {
     _data = std::forward<TextureData>(data);
+    _drawer.setFontTexture(&_data.ft);
+    repaint();
 }
 
 void PreviewWidget::useTextureData(bool yes)
 {
-    _use_texture_data = yes;
+    _drawer.useTextureDrawer(yes);
     repaint();
 }
 

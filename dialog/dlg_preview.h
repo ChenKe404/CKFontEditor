@@ -16,31 +16,12 @@
 
 #include <QDialog>
 #include <component/canvas.h>
-#include <drawer.h>
+#include <component/mydrawer.h>
 #include "dlg_texture.h"
 
 namespace Ui {
 class DlgPreview;
 }
-
-struct Drawer : public FontDrawer
-{
-    void perchar(int x,int y, const Font::Char* chr, const Font::DataPtr& d) const override;
-    void setPainter(QPainter*);
-    void setMultiply(bool yes);
-protected:
-    QPainter* _p;
-    QPixmap _pix;
-    bool _multiply = false;
-};
-
-struct TextureDrawer : public Drawer
-{
-    void setTextureData(const TextureData* data);
-    void perchar(int x,int y, const Font::Char* chr, const Font::DataPtr& d) const override;
-private:
-    const TextureData* _data = nullptr;
-};
 
 class PreviewWidget : public Canvas
 {
@@ -64,10 +45,8 @@ public:
     void showTextBox(bool yes);
 private:
     Font* _font = nullptr;
-    Drawer _drawer;
-    TextureDrawer _drawer;
-    Drawer::Options _opts;
-    Font::CharPtrList _chrs;
+    MyDrawer _drawer;
+    FontDrawer::Options _opts;
 
     QSize _area; // 文本域宽高
     bool _show_textbox;
@@ -89,8 +68,6 @@ private:
     void onAlign();
 private:
     Ui::DlgPreview *ui;
-
-    bool _use_texture = false;
 };
 
 #endif // DLG_PREVIEW_H

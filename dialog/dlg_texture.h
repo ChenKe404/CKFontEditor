@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QPointer>
-#include <drawer_sprite.h>
+#include <font_texture.h>
 #include <component/canvas.h>
 
 namespace Ui {
@@ -11,10 +11,8 @@ class DlgTexture;
 }
 
 struct TextureData {
-    using Char = FontTextureCreator::Char;
-    using CharList = FontTextureCreator::CharList;
-    CharList chrs;
-    std::vector<QSharedPointer<QImage>> texs;
+    FontTexture ft;
+    std::vector<QSharedPointer<QImage>> imgs;
 };
 
 class PreviewTextureWidget : public Canvas
