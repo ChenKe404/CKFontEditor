@@ -136,30 +136,22 @@ void PreviewWidget::draw(QPainter& p, bool transformed)
     {
         _drawer.setPainter(&p);
         auto box = _drawer.draw(0,0,_area.width(),_area.height(),_opts);
-        p.drawRect(QRect{
-            box.x,
-            box.y,
-            box.w,
-            box.h
-        });
-    }
-    else
-    {
-        const auto bkg = _background;
-        auto op = originPos();
         // 文本外框
         if(_show_textbox)
         {
-            auto box = _drawer.measure(_area.width(),_area.height(),_opts);
+            const auto bkg = _background;
             p.setPen({ 255-bkg.red(),255-bkg.green(),255-bkg.blue() });
-            p.drawRect(QRectF{
-                box.x * _scale + op.x(),
-                box.y * _scale + op.y(),
-                box.w * _scale,
-                box.h * _scale
+            p.drawRect(QRect{
+                box.x,
+                box.y,
+                box.w,
+                box.h
             });
         }
-
+    }
+    else
+    {
+        auto op = originPos();
         // 文本域边框
         {
             auto x = (double)op.x();
