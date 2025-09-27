@@ -47,6 +47,33 @@ void Drawer::setMultiply(bool yes)
 { _multiply = yes; }
 
 /////////////////////////////////////////
+/// TextureDrawer
+
+void TextureDrawer::setTextureData(const TextureData *data)
+{
+    _data = data;
+}
+
+void TextureDrawer::perchar(int x, int y, const Font::Char *chr, const Font::DataPtr &d) const
+{
+    auto c = (TextureData::Char*)chr;
+    const auto& tex = _data->texs[c->page];
+
+    auto img = tex->copy(c->x,c->y,c->width,c->height);
+    for (int y = 0; y < img.height(); ++y)
+    {
+        QRgb* scanLine = reinterpret_cast<QRgb*>(img.scanLine(y));
+        for (int x = 0; x < img.width(); ++x)
+        {
+            auto& pix = scanLine[x];
+            auto color = mix(toCKColor(pix),_mix,_multiply);
+            pix = toQColor(color).rgba();
+        }
+    }
+}
+
+
+/////////////////////////////////////////
 /// DlgPreview
 
 DlgPreview::DlgPreview(Font *font) :
@@ -87,6 +114,18 @@ DlgPreview::DlgPreview(Font *font) :
     connect(ui->sld_alpha,&QSlider::valueChanged,this,[this](int value){
         ui->widget->setMixAlpha(value);
         ui->lab_alpha->setText(QString::number(value));
+    });
+    connect(ui->chk_texture,&QCheckBox::checkStateChanged,this,[this](Qt::CheckState state){
+        _use_texture = state == Qt::Checked;
+        ui->btn_texture->setEnabled(_use_texture);
+    });
+    connect(ui->btn_texture,&QPushButton::clicked,this,[this,font](){
+        DlgTexture dlg(font,this);
+        if(dlg.exec() == QDialog::Accepted)
+        {
+            ui->widget->setTextureData(std::move(dlg.data()));
+            ui->widget->useTextureData(ui->chk_texture->isChecked());
+        }
     });
     ui->chk_textbox->setChecked(true);
     ui->widget->showTextBox(true);
@@ -136,136 +175,72 @@ void DlgPreview::onAlign()
 /// PreviewWidget
 
 PreviewWidget::PreviewWidget(QWidget *parent)
-    : QWidget(parent),
+    : Canvas(parent),
     _show_textbox(false),
-    _scale(1),_offset(0,0),
     _area(-1,-1),
-    _drag(false)
+    _use_texture_data(false)
 {
     _opts.align = Drawer::AL_LEFT | Drawer::AL_BOTTOM;
     setMouseTracking(true);
     setCursor(Qt::OpenHandCursor);
     _opts.spacingX = -1;
     _opts.spacingY = 0;
+    setOrigin(0.5,0.5);
 }
 
-void PreviewWidget::paintEvent(QPaintEvent *e)
+void PreviewWidget::draw(QPainter& p, bool transformed)
 {
-    QWidget::paintEvent(e);
-    const auto rc = rect();
-    QPainter p(this);
-    p.setRenderHints(p.Antialiasing);
-    const auto bkg = _background;
-    p.fillRect(rc,bkg);
-    p.translate(_offset);
-    auto rc1 = rc.translated(rc.width() / 2,rc.height() / 2);
-
-    // 水平原点线
+    if(transformed)
     {
-        p.setPen(qRgb(255,0,0));
-        p.drawLine(QLine{
-            QPoint{ rc.left() - (int)_offset.x(), rc1.top() },
-            QPoint{ rc.right() - (int)_offset.x(), rc1.top() }
-        });
-    }
-    // 垂直坐标线
-    {
-        p.setPen(qRgb(0,255,0));
-        p.drawLine(QLine{
-            QPoint{ rc1.left(), rc.top() - (int)_offset.y() },
-            QPoint{ rc1.left(), rc.bottom() - (int)_offset.y() }
-        });
-    }
-
-    // 文本外框
-    if(_show_textbox)
-    {
-        auto box = _drawer.measure(_chrs,_area.width(),_area.height(),_opts);
-        p.setPen({ 255-bkg.red(),255-bkg.green(),255-bkg.blue() });
-        p.drawRect(QRectF{
-            box.x * _scale + rc1.left(),
-            box.y * _scale + rc1.top(),
-            box.w * _scale,
-            box.h * _scale
-        });
-    }
-
-    // 文本域边框
-    {
-        auto x = (double)rc1.left();
-        auto y = (double)rc1.top();
-        auto w = _area.width() * _scale;
-        auto h = _area.height() * _scale;
-        p.setPen(qRgb(255,0,255));
-        if(_area.width() > 0)
+        if(!_chrs.empty())
         {
-            if(_area.height() > 0)
-                p.drawRect(QRectF{ x,y,w,h });
-            else
-                p.drawLine(QLineF{ QPointF{ x,y }, QPointF{ x + w,y }, });
-        }
-        else if(_area.height() > 0)
-        {
-            p.drawLine(QLineF{ QPointF{ x,y }, QPointF{ x,y + h } });
+            _drawer.setPainter(&p);
+            auto box = _drawer.draw(_chrs,0,0,_area.width(),_area.height(),_opts);
+            p.drawRect(QRect{
+                box.x,
+                box.y,
+                box.w,
+                box.h
+            });
         }
     }
-
-    p.translate(-_offset);
-    p.scale(_scale,_scale);
-    p.translate((_offset + rc1.topLeft()) / _scale);
-
-    if(!_chrs.empty())
+    else
     {
-        _drawer.setPainter(&p);
-        auto box = _drawer.draw(_chrs,0,0,_area.width(),_area.height(),_opts);
-        p.drawRect(QRect{
-            box.x,
-            box.y,
-            box.w,
-            box.h
-        });
+        const auto bkg = _background;
+        auto op = originPos();
+        // 文本外框
+        if(_show_textbox)
+        {
+            auto box = _drawer.measure(_chrs,_area.width(),_area.height(),_opts);
+            p.setPen({ 255-bkg.red(),255-bkg.green(),255-bkg.blue() });
+            p.drawRect(QRectF{
+                box.x * _scale + op.x(),
+                box.y * _scale + op.y(),
+                box.w * _scale,
+                box.h * _scale
+            });
+        }
+
+        // 文本域边框
+        {
+            auto x = (double)op.x();
+            auto y = (double)op.y();
+            auto w = _area.width() * _scale;
+            auto h = _area.height() * _scale;
+            p.setPen(qRgb(255,0,255));
+            if(_area.width() > 0)
+            {
+                if(_area.height() > 0)
+                    p.drawRect(QRectF{ x,y,w,h });
+                else
+                    p.drawLine(QLineF{ QPointF{ x,y }, QPointF{ x + w,y }, });
+            }
+            else if(_area.height() > 0)
+            {
+                p.drawLine(QLineF{ QPointF{ x,y }, QPointF{ x,y + h } });
+            }
+        }
     }
-}
-
-void PreviewWidget::mousePressEvent(QMouseEvent *e)
-{
-    _start = e->position() - _offset;
-    _drag = e->buttons() & Qt::LeftButton;
-    if(_drag) setCursor(Qt::ClosedHandCursor);
-}
-
-void PreviewWidget::mouseReleaseEvent(QMouseEvent *e)
-{
-    _drag = false;
-    setCursor(Qt::OpenHandCursor);
-}
-
-void PreviewWidget::mouseMoveEvent(QMouseEvent *e)
-{
-    if(!_drag) return;
-    const auto& rc = rect();
-    const auto hw = rc.width() / 2 - 5;
-    const auto hh = rc.height() / 2 - 5;
-    _offset = e->pos() - _start;
-
-    if(_offset.x() < -hw)
-        _offset.setX(-hw);
-    if(_offset.x() > hw)
-        _offset.setX(hw);
-
-    if(_offset.y() < -hh)
-        _offset.setY(-hh);
-    if(_offset.y() > hh)
-        _offset.setY(hh);
-
-    repaint();
-}
-
-void PreviewWidget::wheelEvent(QWheelEvent *e)
-{
-    auto delta = (e->angleDelta().y() / 45) * 0.04;
-    setScale(_scale + delta);
-    emit scale(_scale);
 }
 
 void PreviewWidget::setFont(Font *font)
@@ -281,12 +256,6 @@ void PreviewWidget::setText(const QString &text)
     temp.replace("\\n","\n");
     temp.replace("\\t","\t");
     _chrs = _font->css(temp.toStdU32String());
-    repaint();
-}
-
-void PreviewWidget::setBackground(QColor color)
-{
-    _background = color;
     repaint();
 }
 
@@ -307,16 +276,6 @@ void PreviewWidget::setMixColor(QColor color)
 void PreviewWidget::setAlign(uint8_t align)
 {
     _opts.align = align;
-    repaint();
-}
-
-void PreviewWidget::setScale(float scale)
-{
-    _scale = scale;
-    if(_scale < 0.25)
-        _scale = 0.25;
-    if(_scale > 4)
-        _scale = 4;
     repaint();
 }
 
@@ -342,6 +301,17 @@ void PreviewWidget::setBreakWord(bool yes)
 void PreviewWidget::setMultiply(bool yes)
 {
     _drawer.setMultiply(yes);
+    repaint();
+}
+
+void PreviewWidget::setTextureData(TextureData &&data)
+{
+    _data = std::forward<TextureData>(data);
+}
+
+void PreviewWidget::useTextureData(bool yes)
+{
+    _use_texture_data = yes;
     repaint();
 }
 

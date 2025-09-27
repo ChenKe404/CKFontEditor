@@ -15,7 +15,9 @@
 #define DLG_PREVIEW_H
 
 #include <QDialog>
+#include <component/canvas.h>
 #include <drawer.h>
+#include "dlg_texture.h"
 
 namespace Ui {
 class DlgPreview;
@@ -26,52 +28,52 @@ struct Drawer : public FontDrawer
     void perchar(int x,int y, const Font::Char* chr, const Font::DataPtr& d) const override;
     void setPainter(QPainter*);
     void setMultiply(bool yes);
-private:
+protected:
     QPainter* _p;
     QPixmap _pix;
     bool _multiply = false;
 };
 
-class PreviewWidget : public QWidget
+struct TextureDrawer : public Drawer
+{
+    void setTextureData(const TextureData* data);
+    void perchar(int x,int y, const Font::Char* chr, const Font::DataPtr& d) const override;
+private:
+    const TextureData* _data = nullptr;
+};
+
+class PreviewWidget : public Canvas
 {
     Q_OBJECT
 public:
     PreviewWidget(QWidget* parent);
 
-    void paintEvent(QPaintEvent*e) override;
-    void mousePressEvent(QMouseEvent *e) override;
-    void mouseReleaseEvent(QMouseEvent*e) override;
-    void mouseMoveEvent(QMouseEvent *e) override;
-    void wheelEvent(QWheelEvent *e) override;
+    void draw(QPainter& p, bool transformed) override;
 
     void setFont(Font*);
     void setText(const QString& text);
-    void setBackground(QColor color);
     void setMixAlpha(uint8_t alpha);
     void setMixColor(QColor color);
     void setAlign(uint8_t align);
-    void setScale(float scale);
     void setArea(QSize area);
     void setSpacing(int x,int y);
     void setBreakWord(bool yes);
     void setMultiply(bool yes);
+    void setTextureData(TextureData&& data);
+    void useTextureData(bool yes);
     void showTextBox(bool yes);
-signals:
-    void scale(float scale);
 private:
     Font* _font = nullptr;
     Drawer _drawer;
+    TextureDrawer _drawer;
     Drawer::Options _opts;
     Font::CharPtrList _chrs;
 
-    QColor _background;
     QSize _area; // 文本域宽高
     bool _show_textbox;
     uint8_t _mix_alpha = 0;
-
-    float _scale;   // 缩放
-    QPointF _start,_offset;  // 拖拽开始/拖拽偏移
-    bool _drag;
+    bool _use_texture_data;
+    TextureData _data;
 };
 
 class DlgPreview : public QDialog
@@ -87,6 +89,8 @@ private:
     void onAlign();
 private:
     Ui::DlgPreview *ui;
+
+    bool _use_texture = false;
 };
 
 #endif // DLG_PREVIEW_H

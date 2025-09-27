@@ -162,7 +162,7 @@ void FontListWidget::redrawItems()
 
     _th.start();
 
-    g_appm.printStatus(tr("%1个字符").arg(count-1));
+    g_appm.printStatus(tr("%1个字符").arg(count));
 }
 
 void FontListWidget::onContextMenuRequested(const QPoint &pos)
