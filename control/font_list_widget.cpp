@@ -53,6 +53,8 @@ FontListWidget::FontListWidget(QWidget *parent)
     connect(&_th,&FontItemDrawerThread::done,this,QOverload<>::of(&FontListWidget::repaint));
 }
 
+#include <font_texture.h>
+
 bool FontListWidget::load(const std::string &filename)
 {
     if(!_font.load(filename))
@@ -60,6 +62,7 @@ bool FontListWidget::load(const std::string &filename)
         g_appm.printStatus(tr("打开字体失败..."));
         return false;
     }
+
     onLoad();
     return true;
 }
@@ -71,6 +74,7 @@ bool FontListWidget::load(const Font::Adapter &adp)
         g_appm.printStatus(tr("打开字体失败..."));
         return false;
     }
+
     onLoad();
     return true;
 }

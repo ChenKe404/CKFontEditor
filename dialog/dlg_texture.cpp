@@ -11,6 +11,7 @@ DlgTexture::DlgTexture(const Font* fnt, QWidget *parent) :
     ui->setupUi(this);
     connect(ui->btn_create,&QPushButton::clicked,this,&DlgTexture::onCreate);
     connect(ui->w_preview,&Canvas::scale,ui->spb_scale,&QDoubleSpinBox::setValue);
+    connect(ui->spb_scale,&QDoubleSpinBox::valueChanged,ui->w_preview,&Canvas::setScale);
     connect(ui->btn_background,&ColorButton::colorChanged,ui->w_preview,&Canvas::setBackground);
     connect(ui->spb_page,&QSpinBox::valueChanged,[this](int value){
         if(_data.imgs.empty())
@@ -24,6 +25,24 @@ DlgTexture::DlgTexture(const Font* fnt, QWidget *parent) :
             ui->lab_page->setText(fmt_lab_page.arg(1).arg(_data.imgs.size()));
             ui->w_preview->setImage(_data.imgs[value-1]);
         }
+    });
+    connect(ui->cob_estimate,&QComboBox::activated,this,[this](int idx){
+        if(idx == 0)
+            return;
+        auto w = ck::FontTextureCreator::estimate(*_font,ui->spb_spacing->value());
+        if(idx == 2)
+        {
+            if(w < 128)
+                w= 128;
+            else if(w < 256)
+                w = 256;
+            else if(w < 512)
+                w = 512;
+            else
+                w = ck::FontTextureCreator::estimate(*_font,ui->spb_spacing->value(),256,2048);
+        }
+        ui->spb_width->setValue(w);
+        ui->spb_height->setValue(w);
     });
     fmt_lab_page = ui->lab_page->text();
     ui->lab_page->setText(fmt_lab_page.arg(0).arg(0));
@@ -42,7 +61,7 @@ void DlgTexture::onCreate()
         ui->spb_spacing->value()
         );
     auto& ft = _data.ft;
-    c.start(_font,ft);
+    c.start(*_font,ft);
     if(ft.chrs().empty())
     {
         ui->w_preview->setImage(nullptr);
@@ -75,12 +94,12 @@ void *DlgTexture::Creator::newTexture()
     return ret;
 }
 
-void DlgTexture::Creator::perchar(const Font* fnt,const Char & chr, const Font::DataPtr &d, void *texture) const
+void DlgTexture::Creator::perchar(const Font& fnt,const Char & chr, const Font::DataPtr &d, void *texture)
 {
     auto img = (QImage*)texture;
 
-    const auto trans = fnt->header().transparent;
-    const auto bit32 = fnt->header().flag & Font::FL_BIT32;
+    const auto trans = fnt.header().transparent;
+    const auto bit32 = fnt.header().flag & Font::FL_BIT32;
 
     const auto w = chr.width;
     const auto h = chr.height;
@@ -89,7 +108,7 @@ void DlgTexture::Creator::perchar(const Font* fnt,const Char & chr, const Font::
     {
         for(int x=0; x<w; ++x)
         {
-            auto color = fnt->getColor(chr,x,y);
+            auto color = fnt.getColor(chr,x,y);
             if(!bit32 && color == trans);
             else
                 img->setPixelColor(chr.x + x,chr.y + y,toQColor(color));

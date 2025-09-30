@@ -17,6 +17,25 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
+      <widget class="QComboBox" name="cob_estimate">
+       <item>
+        <property name="text">
+         <string>不估算</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>刚好</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>2次幂</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item>
       <widget class="QLabel" name="label">
        <property name="text">
         <string>纹理宽度:</string>

@@ -36,7 +36,7 @@ class DlgTexture : public QDialog
     public:
         using super::FontTextureCreator;
         void *newTexture() override;
-        void perchar(const Font* fnt,const Char &, const Font::DataPtr &d, void *texture) const override;
+        void perchar(const Font& fnt,const Char &, const Font::DataPtr &d, void *texture) override;
     };
 public:
     explicit DlgTexture(const Font* fnt, QWidget *parent = nullptr);
