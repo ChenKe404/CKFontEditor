@@ -46,6 +46,8 @@ DlgInfo::DlgInfo(QWidget *parent,Font::Header* header) :
     ui->lab_padding->setText(fmt.arg(padding[0]).arg(padding[1]).arg(padding[2]).arg(padding[3]));
 
     ui->btn_transparent->setColor(toQColor(header->transparent));
+    const auto b32 = header->flag & ck::Font::FL_BIT32;
+    ui->lab_desc->setText(b32 ? tr("32位色字体(带透明通道)") : tr("24位色字体"));
 }
 
 DlgInfo::~DlgInfo()

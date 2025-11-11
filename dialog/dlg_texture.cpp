@@ -109,7 +109,8 @@ void DlgTexture::Creator::perchar(const Font& fnt,const Char & chr, const Font::
         for(int x=0; x<w; ++x)
         {
             auto color = fnt.getColor(chr,x,y);
-            if(!bit32 && color == trans);
+            if(!bit32 && color == trans)
+                continue;
             else
                 img->setPixelColor(chr.x + x,chr.y + y,toQColor(color));
         }

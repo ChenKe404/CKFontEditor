@@ -24,10 +24,13 @@
 using namespace ck;
 
 inline color toCKColor(const QColor& c)
-{ return ck::argb((uint8_t)c.alpha(),(uint8_t)c.red(),(uint8_t)c.green(),(uint8_t)c.blue()); }
+{ return ck::argb(c.alpha(),c.red(),c.green(),c.blue()); }
+
+inline color toCKColor(const QRgb& c)
+{ return ck::argb(qAlpha(c),qRed(c),qGreen(c),qBlue(c)); }
 
 inline QColor toQColor(const color& c)
-{ return qRgba(cr(c),cg(c),cb(c),ca(c)); }
+{ return QColor{ cr(c),cg(c),cb(c),ca(c) }; }
 
 inline bool Question(const QString& text,const QString& caption = QObject::tr("请确认"))
 { return QMessageBox::question(nullptr,caption,text) == QMessageBox::Yes; }
