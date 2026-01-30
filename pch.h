@@ -19,18 +19,20 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QApplication>
+#include <QSettings>
 
-#include <font.h>
+#include <file.h>
 using namespace ck;
+using font::color;
 
 inline color toCKColor(const QColor& c)
-{ return ck::argb(c.alpha(),c.red(),c.green(),c.blue()); }
+{ return font::argb(c.alpha(),c.red(),c.green(),c.blue()); }
 
 inline color toCKColor(const QRgb& c)
-{ return ck::argb(qAlpha(c),qRed(c),qGreen(c),qBlue(c)); }
+{ return font::argb(qAlpha(c),qRed(c),qGreen(c),qBlue(c)); }
 
 inline QColor toQColor(const color& c)
-{ return QColor{ cr(c),cg(c),cb(c),ca(c) }; }
+{ return QColor{ font::cr(c),font::cg(c),font::cb(c),font::ca(c) }; }
 
 inline bool Question(const QString& text,const QString& caption = QObject::tr("请确认"))
 { return QMessageBox::question(nullptr,caption,text) == QMessageBox::Yes; }

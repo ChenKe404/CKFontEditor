@@ -3,7 +3,7 @@
 
 #include <QDialog>
 #include <QPointer>
-#include <font_texture.h>
+#include <ckfont/texture.h>
 #include <component/canvas.h>
 
 namespace Ui {
@@ -11,7 +11,7 @@ class DlgTexture;
 }
 
 struct TextureData {
-    FontTexture ft;
+    font::Texture ft;
     std::vector<QSharedPointer<QImage>> imgs;
 };
 
@@ -30,16 +30,16 @@ private:
 class DlgTexture : public QDialog
 {
     Q_OBJECT
-    class Creator : public FontTextureCreator
+    class Creator : public font::TextureCreator
     {
-        using super = FontTextureCreator;
+        using super = font::TextureCreator;
     public:
-        using super::FontTextureCreator;
+        using super::TextureCreator;
         void *newTexture() override;
-        void perchar(const Font& fnt,const Char &, const Font::DataPtr &d, void *texture) override;
+        void perchar(const font::File& fnt,const Char &, const font::DataPtr &d, void *texture) override;
     };
 public:
-    explicit DlgTexture(const Font* fnt, QWidget *parent = nullptr);
+    explicit DlgTexture(const font::File* fnt, QWidget *parent = nullptr);
     ~DlgTexture();
 
     TextureData& data();
@@ -47,7 +47,7 @@ private:
     void onCreate();
 private:
     Ui::DlgTexture *ui;
-    const Font* _font;
+    const font::File* _font;
     TextureData _data;
 };
 

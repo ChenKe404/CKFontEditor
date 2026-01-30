@@ -22,8 +22,9 @@ if(MSVC)
 endif()
 
 file(GLOB_RECURSE SOURCE
+    src/*.h src/*.cpp
     dialog/*.h dialog/*.cpp dialog/*.ui
-    control/*.h control/*.cpp
+    control/*.h control/*.cpp control/*.ui
     component/*.h component/*.cpp
 )
 add_executable(CKFontEditor
@@ -38,7 +39,10 @@ add_executable(CKFontEditor
 )
 target_precompile_headers(CKFontEditor PRIVATE pch.h)
 target_include_directories(CKFontEditor PRIVATE .)
-target_link_libraries(CKFontEditor PRIVATE Qt${QT_VERSION_MAJOR}::Widgets ckfont)
+target_link_libraries(CKFontEditor PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    ckfont
+)
 target_compile_definitions(CKFontEditor PRIVATE
     -DPRJ_VERSION="${PROJECT_VERSION}"
     -DPRJ_LICENCE="MIT"

@@ -217,6 +217,7 @@
      <addaction name="act_bmfont"/>
     </widget>
     <addaction name="act_open"/>
+    <addaction name="act_create"/>
     <addaction name="separator"/>
     <addaction name="act_save"/>
     <addaction name="act_saveas"/>
@@ -314,6 +315,17 @@
    </property>
    <property name="toolTip">
     <string notr="true">简体中文</string>
+   </property>
+  </action>
+  <action name="act_create">
+   <property name="text">
+    <string>创建</string>
+   </property>
+   <property name="toolTip">
+    <string>从系统字体创建</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+Shift+C</string>
    </property>
   </action>
  </widget>

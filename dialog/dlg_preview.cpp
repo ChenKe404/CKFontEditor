@@ -19,7 +19,7 @@
 /////////////////////////////////////////
 /// DlgPreview
 
-DlgPreview::DlgPreview(Font *font) :
+DlgPreview::DlgPreview(font::File *font) :
     QDialog(),
     ui(new Ui::DlgPreview)
 {
@@ -92,21 +92,21 @@ void DlgPreview::onAlign()
     uint8_t align = 0;
     auto i = ui->cob_align_h->currentIndex();
     switch (i) {
-    case 0: align |= FontDrawer::AL_LEFT;
+    case 0: align |= font::AL_LEFT;
         break;
-    case 1: align |= FontDrawer::AL_HCENTER;
+    case 1: align |= font::AL_HCENTER;
         break;
-    case 2: align |= FontDrawer::AL_RIGHT;
+    case 2: align |= font::AL_RIGHT;
         break;
     }
 
     i = ui->cob_align_v->currentIndex();
     switch (i) {
-    case 0: align |= FontDrawer::AL_TOP;
+    case 0: align |= font::AL_TOP;
         break;
-    case 1: align |= FontDrawer::AL_VCENTER;
+    case 1: align |= font::AL_VCENTER;
         break;
-    case 2: align |= FontDrawer::AL_BOTTOM;
+    case 2: align |= font::AL_BOTTOM;
         break;
     }
     ui->widget->setAlign(align);
@@ -121,13 +121,13 @@ PreviewWidget::PreviewWidget(QWidget *parent)
     _area(-1,-1),
     _use_texture_data(false)
 {
-    _opts.align = FontDrawer::AL_LEFT | FontDrawer::AL_BOTTOM;
+    _opts.align = font::AL_LEFT | font::AL_BOTTOM;
     setMouseTracking(true);
     setCursor(Qt::OpenHandCursor);
     _opts.spacingX = -1;
     _opts.spacingY = 0;
     setOrigin(0.5,0.5);
-    _drawer.setFontTexture(&_data.ft);
+    _drawer.setTextures(&_data.ft);
 }
 
 void PreviewWidget::draw(QPainter& p, bool transformed)
@@ -174,7 +174,7 @@ void PreviewWidget::draw(QPainter& p, bool transformed)
     }
 }
 
-void PreviewWidget::setFont(Font *font)
+void PreviewWidget::setFont(font::File *font)
 {
     _font = font;
     _drawer.setFont(_font);
@@ -194,13 +194,13 @@ void PreviewWidget::setMixAlpha(uint8_t alpha)
 {
     _mix_alpha = alpha;
     auto clr = _drawer.mixColor();
-    _drawer.setMixColor(argb(_mix_alpha,cr(clr),cg(clr),cb(clr)));
+    _drawer.setMixColor(font::argb(_mix_alpha,font::cr(clr),font::cg(clr),font::cb(clr)));
     repaint();
 }
 
 void PreviewWidget::setMixColor(QColor color)
 {
-    _drawer.setMixColor(argb(_mix_alpha,color.red(),color.green(),color.blue()));
+    _drawer.setMixColor(font::argb(_mix_alpha,color.red(),color.green(),color.blue()));
     repaint();
 }
 
@@ -238,7 +238,7 @@ void PreviewWidget::setMultiply(bool yes)
 void PreviewWidget::setTextureData(TextureData &&data)
 {
     _data = std::forward<TextureData>(data);
-    _drawer.setFontTexture(&_data.ft);
+    _drawer.setTextures(&_data.ft);
     repaint();
 }
 

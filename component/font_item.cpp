@@ -27,7 +27,7 @@ void FontItem::paintEvent(QPaintEvent *e)
     p.drawPixmap(rect(),_pix);
 }
 
-void FontItem::set(const Font::Char &chr)
+void FontItem::set(const font::Char &chr)
 {
     _chr = chr;
     QString s;
@@ -42,7 +42,7 @@ char32_t FontItem::code() const
 //////////////////////////////////
 /// FontItemDrawer
 
-FontItemDrawer::FontItemDrawer(Font *font)
+FontItemDrawer::FontItemDrawer(font::File *font)
     : _font(font),
     _transparent(0,0,0),
     _background(190,190,190),
@@ -117,7 +117,7 @@ void FontItemDrawer::drawItem(FontItem* item)
     drawItem(item->_chr,item->_pix);
 }
 
-void FontItemDrawer::drawItem(const Font::Char &chr, QPixmap& out)
+void FontItemDrawer::drawItem(const font::Char &chr, QPixmap& out)
 {
     out = QPixmap(_size);
     const QRect rc{ 0,0,_size.width(),_size.height() };
@@ -165,11 +165,11 @@ void FontItemDrawer::drawItem(const Font::Char &chr, QPixmap& out)
     p.drawPixmap(x,y,pix);
 }
 
-void FontItemDrawer::drawChar(const Font::Char &chr, QPixmap &out)
+void FontItemDrawer::drawChar(const font::Char &chr, QPixmap &out)
 {
     const auto trans = toCKColor(_transparent);
     const auto bkg = toCKColor(_background);
-    const auto bit32 = _font->header().flag & Font::FL_BIT32;
+    const auto bit32 = _font->header().flag & font::FL_BIT32;
 
     const auto w = chr.width;
     const auto h = chr.height;

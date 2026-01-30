@@ -16,7 +16,7 @@
 
 #include <QWidget>
 #include <QThread>
-#include <font.h>
+#include <file.h>
 
 class FontItem : public QWidget
 {
@@ -24,18 +24,18 @@ class FontItem : public QWidget
 public:
     void paintEvent(QPaintEvent*) override;
 
-    void set(const Font::Char&);    // 设置当前的字符
+    void set(const font::Char&);    // 设置当前的字符
     char32_t code() const;
 private:
     friend class FontItemDrawer;
-    Font::Char _chr;
+    font::Char _chr;
     QPixmap _pix;
 };
 
 class FontItemDrawer
 {
 public:
-    FontItemDrawer(Font* font);
+    FontItemDrawer(font::File* font);
     // 字体透明色
     void setFontTransparent(const QColor&);
     QColor fontTransparent() const;
@@ -50,12 +50,12 @@ public:
 
     QSize computeItemSize();
     void drawItem(FontItem* item);
-    void drawItem(const Font::Char& chr, QPixmap& out);
-    void drawChar(const Font::Char& chr, QPixmap& out);
+    void drawItem(const font::Char& chr, QPixmap& out);
+    void drawChar(const font::Char& chr, QPixmap& out);
 private:
     QFont _fnt_code,_fnt_char;
     QSize _sz_code, _sz_char;
-    Font* _font;
+    font::File* _font;
     QColor _transparent,_background;
     float _rate;
     QSize _size;

@@ -15,11 +15,12 @@
 #include "./ui_mainwindow.h"
 #include <QFileDialog>
 #include <QColorDialog>
-#include <fnt_adapter.h>
+#include <adapter.h>
 #include <dialog/dlg_import_bmfont.h>
 #include <dialog/dlg_about.h>
 #include <dialog/dlg_preview.h>
 #include <dialog/dlg_info.h>
+#include <dialog/dlg_create.h>
 #include <QSettings>
 #include <QTranslator>
 #include <appmodel.h>
@@ -53,6 +54,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->btn_preview,&QPushButton::clicked,this,&MainWindow::onPreview);
 
     connect(ui->act_open,&QAction::triggered,this,&MainWindow::onOpen);
+    connect(ui->act_create,&QAction::triggered,this,&MainWindow::onCreate);
     connect(ui->act_save,&QAction::triggered,this,&MainWindow::onSave);
     connect(ui->act_saveas,&QAction::triggered,this,&MainWindow::onSaveAs);
     connect(ui->act_bmfont,&QAction::triggered,this,&MainWindow::onImportBMFont);
@@ -128,6 +130,13 @@ void MainWindow::onOpen()
     }
 }
 
+void MainWindow::onCreate()
+{
+    DlgCreate dlg;
+    if(dlg.exec() != QDialog::Accepted)
+        return;
+}
+
 void MainWindow::onSave()
 {
     if(!_unsaved && QFile::exists(_filename))
@@ -197,7 +206,7 @@ void MainWindow::onImportBMFont()
         auto& filename = dlg.filename();
         auto& transparent = dlg.transparent();
         const auto path = filename.toLocal8Bit().toStdString();
-        FntAdapter adp;
+        font::BMFontAdapter adp;
         adp.load(path,toCKColor(transparent),dlg.bit32());
         adp.header().spacingX = dlg.spcingX();
         if(ui->w_list->load(adp))
@@ -213,7 +222,7 @@ void MainWindow::onImportBMFont()
 void MainWindow::onInfo()
 {
     auto& font = ui->w_list->ckfont();
-    Font::Header header = font.header();
+    font::Header header = font.header();
     DlgInfo dlg(this,&header);
     if(dlg.exec())
     {
@@ -223,11 +232,11 @@ void MainWindow::onInfo()
     }
 }
 
-static void sort(Font& font,bool asc)
+static void sort(font::File& font,bool asc)
 {
-    Font::CharList chrs = font.chrs();
-    std::map<uint32_t,Font::Data> map;
-    Font::Data tmp;
+    font::CharArray chrs = font.chrs();
+    std::map<uint32_t,font::Data> map;
+    font::Data tmp;
     for(auto& it : chrs)
     {
         if(font.getData(it,tmp))
@@ -236,7 +245,7 @@ static void sort(Font& font,bool asc)
     std::sort(chrs.begin(),chrs.end(),[asc](auto& a,auto& b){
         return asc ? a.code < b.code : a.code > b.code;
     });
-    Font::Header header = font.header();
+    font::Header header = font.header();
     font.clear();
     font.setHeader(header);
     for(auto& it : chrs)

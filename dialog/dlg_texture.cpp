@@ -3,7 +3,7 @@
 
 static QString fmt_lab_page;
 
-DlgTexture::DlgTexture(const Font* fnt, QWidget *parent) :
+DlgTexture::DlgTexture(const font::File* fnt, QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DlgTexture),
     _font(fnt)
@@ -29,7 +29,7 @@ DlgTexture::DlgTexture(const Font* fnt, QWidget *parent) :
     connect(ui->cob_estimate,&QComboBox::activated,this,[this](int idx){
         if(idx == 0)
             return;
-        auto w = ck::FontTextureCreator::estimate(*_font,ui->spb_spacing->value());
+        auto w = font::TextureCreator::estimate(*_font,ui->spb_spacing->value());
         if(idx == 2)
         {
             if(w < 128)
@@ -39,7 +39,7 @@ DlgTexture::DlgTexture(const Font* fnt, QWidget *parent) :
             else if(w < 512)
                 w = 512;
             else
-                w = ck::FontTextureCreator::estimate(*_font,ui->spb_spacing->value(),256,2048);
+                w = font::TextureCreator::estimate(*_font,ui->spb_spacing->value(),256,2048);
         }
         ui->spb_width->setValue(w);
         ui->spb_height->setValue(w);
@@ -61,7 +61,7 @@ void DlgTexture::onCreate()
         ui->spb_spacing->value()
         );
     auto& ft = _data.ft;
-    c.start(*_font,ft);
+    c.create(*_font,ft);
     if(ft.chrs().empty())
     {
         ui->w_preview->setImage(nullptr);
@@ -94,12 +94,12 @@ void *DlgTexture::Creator::newTexture()
     return ret;
 }
 
-void DlgTexture::Creator::perchar(const Font& fnt,const Char & chr, const Font::DataPtr &d, void *texture)
+void DlgTexture::Creator::perchar(const font::File& fnt,const Char & chr, const font::DataPtr &d, void *texture)
 {
     auto img = (QImage*)texture;
 
     const auto trans = fnt.header().transparent;
-    const auto bit32 = fnt.header().flag & Font::FL_BIT32;
+    const auto bit32 = fnt.header().flag & font::FL_BIT32;
 
     const auto w = chr.width;
     const auto h = chr.height;

@@ -31,7 +31,7 @@ public:
 
     void draw(QPainter& p, bool transformed) override;
 
-    void setFont(Font*);
+    void setFont(font::File*);
     void setText(const QString& text);
     void setMixAlpha(uint8_t alpha);
     void setMixColor(QColor color);
@@ -44,9 +44,9 @@ public:
     void useTextureData(bool yes);
     void showTextBox(bool yes);
 private:
-    Font* _font = nullptr;
+    font::File* _font = nullptr;
     MyDrawer _drawer;
-    FontDrawer::Options _opts;
+    font::Drawer::Options _opts;
 
     QSize _area; // 文本域宽高
     bool _show_textbox;
@@ -60,7 +60,7 @@ class DlgPreview : public QDialog
     Q_OBJECT
 
 public:
-    explicit DlgPreview(Font*);
+    explicit DlgPreview(font::File*);
     ~DlgPreview();
 private:
     void onSpacing();

@@ -20,6 +20,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsProxyWidget>
 #include <dialog/dlg_add.h>
+#include <ckfont/texture.h>
 
 constexpr int SPACING = 2;
 constexpr int PADDING = 2;
@@ -53,11 +54,9 @@ FontListWidget::FontListWidget(QWidget *parent)
     connect(&_th,&FontItemDrawerThread::done,this,QOverload<>::of(&FontListWidget::repaint));
 }
 
-#include <font_texture.h>
-
 bool FontListWidget::load(const std::string &filename)
 {
-    if(!_font.load(filename))
+    if(!_font.open(filename))
     {
         g_appm.printStatus(tr("打开字体失败..."));
         return false;
@@ -67,7 +66,7 @@ bool FontListWidget::load(const std::string &filename)
     return true;
 }
 
-bool FontListWidget::load(const Font::Adapter &adp)
+bool FontListWidget::load(const font::Adapter &adp)
 {
     if(!_font.load(adp))
     {
@@ -106,7 +105,7 @@ void FontListWidget::clear()
     }
 }
 
-Font &FontListWidget::ckfont()
+font::File &FontListWidget::ckfont()
 {
     return _font;
 }

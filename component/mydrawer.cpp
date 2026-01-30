@@ -3,9 +3,9 @@
 //////////////////////////////////
 /// MyFontDrawer
 
-void MyFontDrawer::perchar(int x,int y, const Font::Char*, const Font::DataPtr& d) const
+void MyFontDrawer::perchar(int x,int y, const font::Char*, const font::DataPtr& d) const
 {
-    const auto bit32 = _font->header().flag & Font::FL_BIT32;
+    const auto bit32 = _font->header().flag & font::FL_BIT32;
     auto trans = _font->header().transparent;
 
     std::vector<color> buf;
@@ -18,7 +18,7 @@ void MyFontDrawer::perchar(int x,int y, const Font::Char*, const Font::DataPtr& 
             if(!bit32 && color == trans)
                 buf.push_back(0);
             else
-                buf.push_back(mix(color,_mix,_multiply));
+                buf.push_back(font::mix(color,_mix,_multiply));
         }
     }
     _p->drawImage(QPoint{x,y}, QImage((uint8_t*)buf.data(),d.w(),d.h(),QImage::Format_ARGB32));
@@ -33,9 +33,9 @@ void MyFontDrawer::setMultiply(bool yes)
 /////////////////////////////////////////
 /// MyTextureDrawer
 
-void MyTextureDrawer::perchar(int x, int y, const Font::Char *chr, const Font::DataPtr &d) const
+void MyTextureDrawer::perchar(int x, int y, const font::Char *chr, const font::DataPtr &d) const
 {
-    auto c = (FontTexture::Char*)chr;
+    auto c = (font::Texture::Char*)chr;
     const auto& tex = (QImage*)_data->pages()[c->page];
 
     auto img = tex->copy(c->x,c->y,c->width,c->height);
@@ -45,14 +45,14 @@ void MyTextureDrawer::perchar(int x, int y, const Font::Char *chr, const Font::D
         for (int x = 0; x < img.width(); ++x)
         {
             auto& pix = scanLine[x];
-            auto color = mix(toCKColor(pix),_mix,_multiply);
+            auto color = font::mix(toCKColor(pix),_mix,_multiply);
             pix = toQColor(color).rgba();
         }
     }
     _p->drawImage(x,y,img);
 }
 
-void MyTextureDrawer::setFontTexture(const FontTexture *data)
+void MyTextureDrawer::setTextures(const font::Texture *data)
 {
     _data = data;
 }
@@ -60,17 +60,17 @@ void MyTextureDrawer::setFontTexture(const FontTexture *data)
 /////////////////////////////////////////
 /// MyDrawer
 
-void MyDrawer::setFont(const Font * fnt)
+void MyDrawer::setFont(const font::File * fnt)
 {
     _fnt = fnt;
     _font_drawer.setFont(fnt);
     _texture_drawer.setFont(fnt);
 }
 
-void MyDrawer::setFontTexture(const FontTexture * ft)
+void MyDrawer::setTextures(const font::Texture * ft)
 {
     _ft = ft;
-    _texture_drawer.setFontTexture(ft);
+    _texture_drawer.setTextures(ft);
     updateCharset();
 }
 
@@ -103,7 +103,7 @@ void MyDrawer::setMultiply(bool yes)
     _texture_drawer.setMultiply(yes);
 }
 
-FontDrawer::Box MyDrawer::draw(int x, int y, int w, int h, const FontDrawer::Options &opts)
+font::Box MyDrawer::draw(int x, int y, int w, int h, const font::Drawer::Options &opts)
 {
     if(_use_texture_drawer)
         return _texture_drawer.draw(_chrs,x,y,w,h,opts);
@@ -111,7 +111,7 @@ FontDrawer::Box MyDrawer::draw(int x, int y, int w, int h, const FontDrawer::Opt
         return _font_drawer.draw(_chrs,x,y,w,h,opts);
 }
 
-FontDrawer::Box MyDrawer::measure(int w, int h, const FontDrawer::Options &opts)
+font::Box MyDrawer::measure(int w, int h, const font::Drawer::Options &opts)
 {
     if(_use_texture_drawer)
         return _texture_drawer.measure(_chrs,w,h,opts);

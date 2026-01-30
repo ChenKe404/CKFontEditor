@@ -34,6 +34,7 @@ public:
     void updateTitle();
 
     void onOpen();
+    void onCreate();
     void onSave();
     void onSaveAs();
     void onClose();

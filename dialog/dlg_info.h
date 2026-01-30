@@ -25,14 +25,14 @@ class DlgInfo : public QDialog
     Q_OBJECT
 
 public:
-    explicit DlgInfo(QWidget *parent,Font::Header* header);
+    explicit DlgInfo(QWidget *parent,font::Header* header);
     ~DlgInfo();
 
 private:
     void accept() override;
 private:
     Ui::DlgInfo *ui;
-    Font::Header* _header;
+    font::Header* _header;
 };
 
 #endif // DLG_INFO_H

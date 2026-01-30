@@ -28,11 +28,11 @@ public:
     explicit FontListWidget(QWidget *parent = nullptr);
 
     bool load(const std::string& filename);
-    bool load(const Font::Adapter& adp);
+    bool load(const font::Adapter& adp);
     bool save(const std::string& filename,bool compress);
     void clear();
 
-    Font& ckfont();
+    font::File& ckfont();
 
     void redrawItems();
 signals:
@@ -47,7 +47,7 @@ private:
     void onAdd();
     void onDelete();
 private:
-    Font _font;
+    font::File _font;
     FontItemDrawerThread _th;
 
     FontItem* _ctx_item;
