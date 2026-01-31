@@ -21,12 +21,10 @@ struct CharsetBlocks : public QObject {
 class CharsetPager : public QThread {
     Q_OBJECT
 public:
-    CharsetPager() : _fm(QFont{}) {}
-
     bool dirty() const {
         return _dirty;
     }
-    void setFont(const QFont& font);
+    void setFont(const font::TrueType* tt);
 signals:
     void progress(int step);
     void done(const std::vector<const CharsetBlocks::Page*>&);
@@ -34,9 +32,8 @@ protected:
     void run() override;
 private:
     std::mutex _mtx;
-    QFontMetrics _fm;
     size_t _hash;
     bool _dirty = true;
-    // font::TrueType _tt;
+    const font::TrueType* _tt;
 };
 #endif // CHARSET_BLOCKS_H

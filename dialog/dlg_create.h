@@ -28,6 +28,7 @@ private:
 private:
     Ui::DlgCreate *ui;
     font::TrueTypeManager::MetaMap _map;    // 当前打开的字体的元数据
+    font::TrueType _tt;
 };
 
 #endif // DLG_CREATE_H

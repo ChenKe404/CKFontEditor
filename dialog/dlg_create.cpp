@@ -26,6 +26,7 @@ DlgCreate::DlgCreate(QWidget *parent) :
     ui(new Ui::DlgCreate)
 {
     ui->setupUi(this);
+    setWindowFlags(windowFlags() | Qt::WindowMaximizeButtonHint);
 
     connect(ui->btn_browse,&QPushButton::clicked,this,&DlgCreate::onSelect);
     connect(ui->ckb_bold,&QCheckBox::clicked,this,[this](bool){
@@ -196,6 +197,11 @@ void DlgCreate::onStyleChanged()
     bool ok = false;
     auto meta = (Meta*)ui->cob_style->currentData().toLongLong(&ok);
     if(!ok) return;
+    _tt = font::TrueTypeManager::open(*meta);
+    if(!_tt.ready())
+        return;
+
+    /*
     QString style(meta->style.c_str());
     auto font = QFontDatabase::font(ui->cob_family->currentText(),style,12);
     if(font == QFont()) {
@@ -207,5 +213,6 @@ void DlgCreate::onStyleChanged()
     if(font == QFont())
 
     ui->edt_preview->setFont(font);
-    ui->w_selector->setCanvasFont(font);
+    */
+    ui->w_selector->setCanvasFont(&_tt);
 }

@@ -371,23 +371,19 @@ const std::vector<CharsetBlocks::Page>& CharsetBlocks::getPages() {
     return ret;
 }
 
-void CharsetPager::setFont(const QFont &font) {
-    const auto family = font.family();
-    const auto style = font.styleName();
+void CharsetPager::setFont(const font::TrueType* tt) {
+    const auto family = tt->getName(tt->NM_FAMILY);
+    const auto style = tt->getName(tt->NM_SUBFAMILY);
     auto str = family+"_"+style;
     auto hash = qHash(str);
     if(_hash == hash) {
         _dirty = false;
         return;
     }
-    // auto meta = font::TrueTypeManager::getMeta(family.toStdString(),style.toStdString());
-    // _tt = font::TrueTypeManager::open(meta);
-
     _hash = hash;
     _dirty = true;
-    QFontMetrics fm(font);
     _mtx.lock();
-    _fm.swap(fm);
+    _tt = tt;
     _mtx.unlock();
 }
 
@@ -410,17 +406,11 @@ void CharsetPager::run() {
     for(auto& it : pages) {
         emit progress(precent);
         for(auto c=it.begin; c<=it.end; ++c) {
-            // if(_tt.has(c)) {
-            //     result.push_back(&it);
-            //     break;
-            // }
-            if(_fm.inFontUcs4(c)) {
+            if(_tt->has(c)) {
                 result.push_back(&it);
                 break;
             }
         }
-        // if(!_updating)
-        // return;
         precent += step;
     }
     progress(100);

@@ -4,8 +4,12 @@
 #include <QFontDatabase>
 #include <QPaintEvent>
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// CharsetCanvas
+///
+
 CharsetCanvas::CharsetCanvas(QWidget* parent)
-    : QWidget(parent), _backgrid(128,128)
+    : QWidget(parent), _backgrid(128,128), _tt(nullptr)
 {
     QPainter p(&_backgrid);
     p.fillRect(QRect{ 0,0,128,128 },QColor{0,0,0});
@@ -28,6 +32,8 @@ void CharsetCanvas::setRange(uint32_t begin, uint32_t end)
     iter = _selected.find(_end);
     if(iter != _selected.end())
         _selected.erase(std::next(iter),_selected.end());
+    _cache.clear();
+    updateCache(_font_height,true);
     update();
 }
 
@@ -37,16 +43,24 @@ void CharsetCanvas::selectRange(uint32_t begin, uint32_t end)
         return;
     _selected.clear();
     end = std::min(begin + 256, end);
-    for(auto ch=begin;ch<=end;++ch) {
+    uint32_t count = 0;
+    for(auto ch=begin;ch<end;++ch) {
+        if(!_tt->has(ch))
+            continue;
         _selected.insert(ch);
+        ++count;
     }
+    if(count == _count)
+        emit selectedAll();
+    else if(count == 0)
+        emit unselectedAll();
     update();
 }
 
-void CharsetCanvas::selectCharset(const std::vector<uint32_t> &codes)
+void CharsetCanvas::selectCharset(const std::vector<uint32_t> &codepoints)
 {
     _selected.clear();
-    for(auto& ch : codes) {
+    for(auto& ch : codepoints) {
         if(ch < _begin || ch >= _begin + 256)
             continue;
         _selected.insert(ch);
@@ -73,12 +87,24 @@ uint32_t CharsetCanvas::available() const
     return total;
 }
 
+void CharsetCanvas::setFont(const font::TrueType *tt)
+{
+    _tt = tt;
+    _cache.clear();
+    updateCache(_font_height, true);
+    update();
+}
+
 void CharsetCanvas::paintEvent(QPaintEvent *event)
 {
     static QPen pen_black(QColor{0,0,0});
-    static QPen pen_white(QColor{240,240,240});
+    static QPen pen_white(QColor{220,220,220});
 
     QPainter p(this);
+    if(!p.isActive())
+        return;
+    p.setRenderHint(p.Antialiasing, false);
+
     const auto& rc = event->rect();
     // 绘制背景网格
     {
@@ -90,20 +116,20 @@ void CharsetCanvas::paintEvent(QPaintEvent *event)
         }
     }
     auto cs = cellSize();
-    auto w = cs.width(), h = cs.height();
-    auto fontsize = std::min(w,h) * 0.5;
-    if(fontsize < 4)
+    double w = cs.width(), h = cs.height();
+    auto maxW = w * 0.8, maxH = h * 0.7;
+    if(maxW < 4 || maxH < 4)
         return;
+    updateCache(maxH);
 
-    auto fnt = p.font();
-    fnt.setPixelSize((int)fontsize);
-    p.setFont(fnt);
-
-    const auto fm = p.fontMetrics();
     QTextOption opt;
     opt.setAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
     QString str;
     p.setPen(pen_black);
+
+    double ratio = maxH / _bound_h;
+    if(_bound_w * ratio > maxW)
+        ratio = maxW / _bound_w;
 
     for(int r=0; r<16; ++r) {
         for(int c=0; c<16; ++c) {
@@ -114,16 +140,18 @@ void CharsetCanvas::paintEvent(QPaintEvent *event)
                 p.fillRect(rc,QColor(50,50,50));
                 continue;
             }
-            if(!fm.inFontUcs4(ch))
-                continue;
+            auto pix = get(ch);
+            if(!pix) continue;
 
             if(_selected.count(ch)) // 已选
                 p.fillRect(rc,QColor(200,200,200));
             else
-                p.fillRect(rc,QColor(80,80,80));
-            str.clear();
-            str.append(QChar::fromUcs4(ch));
-            p.drawText(rc,str,opt);
+                p.fillRect(rc,QColor(90,90,90));
+
+            double w1=pix->width()*ratio, h1=pix->height()*ratio;
+            auto x = rc.x() + (w - w1) * 0.5;
+            auto y = rc.y() + (h - h1) * 0.5;
+            p.drawPixmap(x,y, w1,h1, *pix);
         }
     }
 
@@ -138,17 +166,14 @@ void CharsetCanvas::paintEvent(QPaintEvent *event)
 
 void CharsetCanvas::mousePressEvent(QMouseEvent *event)
 {
-    toggle(event->pos(), false);
-}
-
-void CharsetCanvas::mouseReleaseEvent(QMouseEvent *event)
-{
-    _darged.clear();
+    if(event->button() == Qt::LeftButton)
+        toggle(event->pos(), false);
 }
 
 void CharsetCanvas::mouseMoveEvent(QMouseEvent *event)
 {
-    toggle(event->pos(), true);
+    if(event->buttons() == Qt::LeftButton)
+        toggle(event->pos(), true);
 }
 
 QSizeF CharsetCanvas::cellSize() const
@@ -165,32 +190,111 @@ void CharsetCanvas::toggle(const QPoint &pos,bool drag)
 {
     auto cs = cellSize();
     auto w = cs.width(), h = cs.height();
-    const auto fm = fontMetrics();
 
     for(int r=0; r<16; ++r) {
         for(int c=0; c<16; ++c) {
             auto ch = _begin + r * 16 + c;
-            if(!fm.inFontUcs4(ch))
+            if(!_tt->has(ch))
                 continue;
 
             QRectF rc(c*w, r*h, w, h );
             if(!point_in_rect(rc,pos))
                 continue;
 
-            if(drag && _darged.count(ch) > 0)
-                return;
-            _darged.insert(ch);
-
-            auto iter = _selected.find(ch);
-            if(iter == _selected.end())
-                _selected.insert(ch);
-            else
-                _selected.erase(ch);
+            const auto is_selected = _selected.count(ch) > 0;
+            if(drag) {
+                if(_drag_select) {
+                    _selected.insert(ch);
+                    if(!is_selected) emit selected(ch);
+                } else {
+                    _selected.erase(ch);
+                    if(is_selected) emit unselected(ch);
+                }
+            } else {
+                if(is_selected) {
+                    _selected.erase(ch);
+                    emit unselected(ch);
+                    _drag_select = false;
+                } else {
+                    _selected.insert(ch);
+                    emit selected(ch);
+                    _drag_select = true;
+                }
+            }
+            if(_selected.empty())
+                emit unselectedAll();
+            else if(_selected.size() == _count)
+                emit selectedAll();
             update();
             return;
         }
     }
 }
+
+void CharsetCanvas::updateCache(int fontHeight, bool force)
+{
+    if(fontHeight < 4)
+        return;
+    if(!force && _font_height > 0 && (fontHeight < _font_height * 1.3 && fontHeight > _font_height * 0.75))
+        return;
+    _font_height = fontHeight;
+    _font_scale = _tt->scaleForHeight(_font_height);
+    _bound_w = 0; _bound_h = 0;
+    _count = 0;
+    for(auto ch=_begin;ch<_end;++ch) {
+        if(!_tt->has(ch))
+            continue;
+        ++_count;
+        int x,y,w,h;
+        _tt->getBitmapBox(ch,_font_scale,x,y,w,h);
+        if(w > _bound_w)
+            _bound_w = w;
+        if(h > _bound_h)
+            _bound_h = h;
+    }
+
+    for(auto& it : _cache) {
+        makePixmap(it.second,it.first);
+    }
+}
+
+void CharsetCanvas::makePixmap(QPixmap &out, uint32_t codepoint)
+{
+    int x,y,w,h;
+    _tt->getBitmapBox(codepoint,_font_scale,x,y,w,h);
+    std::vector<uint8_t> buf(w*h);
+    _tt->makeBitmap(codepoint, _font_scale, buf.data(), w, h, w,true);
+    QImage img(w,h,QImage::Format_ARGB32);
+
+    auto to_argb = [&buf,&img,w,h](){
+        for(int r=0;r<h;++r) {
+            QRgb *line = reinterpret_cast<QRgb*>(img.scanLine(r));
+            for(int c=0;c<w;++c) {
+                auto alpha = *(buf.data() + r * w + c);
+                line[c] = alpha < 1 ? 0 : qRgba(10,10,10,alpha);
+            }
+        }
+    };
+
+    to_argb();
+    out = QPixmap::fromImage(img);
+}
+
+const QPixmap* CharsetCanvas::get(uint32_t codepoint)
+{
+    if(!_tt || !_tt->has(codepoint))
+        return nullptr;
+    auto iter = _cache.find(codepoint);
+    if(iter != _cache.end())
+        return &iter->second;
+    auto& pix = _cache[codepoint];
+    makePixmap(pix,codepoint);
+    return &pix;
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// CharsetSelector
+///
 
 CharsetSelector::CharsetSelector(QWidget *parent) :
     QWidget(parent),
@@ -204,9 +308,24 @@ CharsetSelector::CharsetSelector(QWidget *parent) :
     ui->list_block->setUniformItemSizes(true);
     ui->list_block->setViewMode(QListView::ListMode);
     ui->list_block->setWrapping(false);
-    ui->list_block->setLayoutMode(QListView::Batched);
-    ui->list_block->setBatchSize(50);  // 分批处理项
+    auto act = new QAction(tr("从文件选择字符"));
+    connect(act,&QAction::triggered,this,&CharsetSelector::onOpen); _menu.addAction(act);
+    act = new QAction(tr("从文件追加字符"));
+    connect(act,&QAction::triggered,this,&CharsetSelector::onAppend); _menu.addAction(act);
+    act = new QAction(tr("清除选择"));
+    connect(act,&QAction::triggered,this,&CharsetSelector::onClear); _menu.addAction(act);
 
+    connect(this,&QWidget::customContextMenuRequested,this,[this](const QPoint& pos){
+        _menu.popup(mapToGlobal(pos));
+    });
+    connect(ui->list_block,&QListWidget::currentRowChanged,this,[this](int row){
+        auto item = ui->list_block->currentItem();
+        if(!item) return;
+        bool ok = false;
+        auto page = (const CharsetBlocks::Page*)item->data(Qt::UserRole).toLongLong(&ok);
+        if(!ok) return;
+        ui->canvas->setRange(page->begin,page->end);
+    });
     connect(&_pager, &CharsetPager::progress, ui->pgb, &QProgressBar::setValue);
     connect(&_pager, &CharsetPager::done, this, [this](const std::vector<const CharsetBlocks::Page*>& pages){
         ui->pgb->setVisible(false);
@@ -221,6 +340,7 @@ CharsetSelector::CharsetSelector(QWidget *parent) :
         }
         auto item = ui->list_block->item(0);
         if(item) {
+            item->setSelected(true);
             auto page = (const CharsetBlocks::Page*)item->data(Qt::UserRole).toLongLong();
             ui->canvas->setRange(page->begin,page->end);
         }
@@ -233,7 +353,7 @@ CharsetSelector::~CharsetSelector()
     delete ui;
 }
 
-void CharsetSelector::setCanvasFont(const QFont &font)
+void CharsetSelector::setCanvasFont(const font::TrueType* font)
 {
     _pager.setFont(font);
     ui->canvas->setFont(font);
@@ -258,4 +378,24 @@ void CharsetSelector::updateBlockList()
     ui->pgb->setVisible(true);
     ui->list_block->clear();
     _pager.start();
+}
+
+void CharsetSelector::onOpen()
+{
+    QFileDialog dlg(this,tr("从文本文件选择字符"),"","UTF-8 Text File (*.txt) ;; All File (*.*)");
+    if(dlg.exec() != QDialog::Accepted)
+        return;
+
+}
+
+void CharsetSelector::onAppend()
+{
+    QFileDialog dlg(this,tr("从文本文件追加字符"),"","UTF-8 Text File (*.txt) ;; All File (*.*)");
+    if(dlg.exec() != QDialog::Accepted)
+        return;
+}
+
+void CharsetSelector::onClear()
+{
+
 }
