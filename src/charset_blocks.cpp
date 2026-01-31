@@ -357,12 +357,12 @@ const std::vector<CharsetBlocks::Page>& CharsetBlocks::getPages() {
     static std::vector<Page> ret;
     if(ret.empty()) {
         for(auto& it : CharsetBlocks::get()) {
-            auto count =  ceil((it.end - it.begin + 1) / (float)COUNT_PER_PAGE);    // 区块被拆分为多少个页
+            auto count =  ceil((it.last - it.first + 1) / (float)COUNT_PER_PAGE);    // 区块被拆分为多少个页
             for(int i=0;i<count;++i) {
-                auto begin = it.begin + i * COUNT_PER_PAGE;
+                auto begin = it.first + i * COUNT_PER_PAGE;
                 ret.push_back({
                     begin,
-                    std::min(it.end, begin + COUNT_PER_PAGE),
+                    std::min(it.last, begin + COUNT_PER_PAGE - 1),
                     &it
                 });
             }
@@ -380,6 +380,15 @@ void CharsetPager::setFont(const font::TrueType* tt) {
         _dirty = false;
         return;
     }
+
+    _total = 0;
+    for(auto& it : CharsetBlocks::get()) {
+        for(auto ch=it.first;ch<=it.last;++ch) {
+            if(tt->has(ch))
+                ++_total;
+        }
+    }
+
     _hash = hash;
     _dirty = true;
     _mtx.lock();
@@ -405,7 +414,7 @@ void CharsetPager::run() {
     double step = 100.0 / (pages.size() + 1);
     for(auto& it : pages) {
         emit progress(precent);
-        for(auto c=it.begin; c<=it.end; ++c) {
+        for(auto c=it.first; c<=it.last; ++c) {
             if(_tt->has(c)) {
                 result.push_back(&it);
                 break;
@@ -414,8 +423,34 @@ void CharsetPager::run() {
         precent += step;
     }
     progress(100);
-    std::sort(result.begin(),result.end(),[](auto a, auto b){ return a->begin < b->begin; });
+    std::sort(result.begin(),result.end(),[](auto a, auto b){ return a->first < b->first; });
     emit done(result);
     _dirty = false;
     g_cache[_hash] = std::move(result);
+}
+
+const CharsetBlocks::Block *CharsetBlocks::find_block(uint32_t codepoint)
+{
+    CharsetBlocks::Block val{ codepoint,0,0 };
+    const CharsetBlocks::Block* ret = nullptr;
+    auto& blocks = get();
+    auto found = std::binary_search(blocks.begin(),blocks.end(),val,[&ret](const Block& it, const Block& val){
+        if(val.first >= it.first && val.first <= it.last)
+            ret = &it;
+        return it.first < val.first;
+    });
+    return ret;
+}
+
+const CharsetBlocks::Page *CharsetBlocks::find_page(uint32_t codepoint)
+{
+    CharsetBlocks::Page val{ codepoint,0,0 };
+    const CharsetBlocks::Page* ret = nullptr;
+    auto& pages = getPages();
+    auto found = std::binary_search(pages.begin(),pages.end(),val,[&ret](const Page& it, const Page& val){
+        if(val.first >= it.first && val.first <= it.last)
+            ret = &it;
+        return it.first < val.first;
+    });
+    return ret;
 }

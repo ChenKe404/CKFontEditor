@@ -73,6 +73,8 @@ DlgCreate::DlgCreate(QWidget *parent) :
     ui->ckb_zero_offset->setChecked(sets.value(CGR_CREATE "ZeroOffset").toBool());
     ui->ckb_8bit->setChecked(sets.value(CGR_CREATE "Depth8Bit").toBool());
     ui->ckb_alpha->setChecked(sets.value(CGR_CREATE "Alpha").toBool());
+    auto codes = sets.value(CGR_CREATE "Charset").toString().toUcs4();
+    ui->w_selector->setCharset({ codes.begin(),codes.end() });
 }
 
 DlgCreate::~DlgCreate()
@@ -97,22 +99,23 @@ DlgCreate::~DlgCreate()
     sets.setValue(CGR_CREATE "Alpha",ui->ckb_alpha->isChecked());
     sets.setValue(CGR_CREATE "Width",ui->spb_width->value());
     sets.setValue(CGR_CREATE "Height",ui->spb_height->value());
+    QString str;
+    auto& charset = ui->w_selector->charset();
+    for(auto& ch : charset) {
+        str.append(QChar::fromUcs4(ch));
+    }
+    sets.setValue(CGR_CREATE "Charset",str);
     delete ui;
 }
 
 void DlgCreate::accept()
 {
-    auto ttf = ui->edt_font->text().toLocal8Bit().toStdString();
-    if(ttf.empty()) {
-        Warning(tr("字体路径不能为空!"));
+    const auto& charset = ui->w_selector->charset();
+    if(charset.empty()) {
+        Warning(tr("字符集不能为空!"));
         return;
     }
-    // auto charset = ui->edt_charset->toPlainText().toStdU32String();
-    // if(charset.empty()) {
-    //     Warning(tr("字符集不能为空!"));
-    //     return;
-    // }
-    QFileDialog dlg(this,tr("保存fnt字体到"),"","Fnt (*.fnt)");
+    QFileDialog dlg(this,tr("保存位图字体到"),"","BMFont (*.fnt)");
     dlg.setAcceptMode(QFileDialog::AcceptSave);
     if(dlg.exec() != QDialog::Accepted)
         return;
@@ -125,11 +128,11 @@ void DlgCreate::accept()
     sets.smooth = ui->ckb_smooth->isChecked();
     sets.aa = ui->spb_aa->value();
     Convertor conv(sets);
-    // if(conv.convert(ttf,fnt,(uint32_t*)charset.data(),charset.size()))
-    //     Information(tr("导出成功!"));
-    // else
-    //     Warning(tr("导出失败!"));
-    QDialog::accept();
+    std::vector<uint32_t> buf(charset.begin(),charset.end());
+    if(conv.convert(_tt,fnt,buf.data(),buf.size()))
+        Information(tr("导出成功!"));
+    else
+        Warning(tr("导出失败!"));
 }
 
 void DlgCreate::onPreview()
@@ -200,19 +203,5 @@ void DlgCreate::onStyleChanged()
     _tt = font::TrueTypeManager::open(*meta);
     if(!_tt.ready())
         return;
-
-    /*
-    QString style(meta->style.c_str());
-    auto font = QFontDatabase::font(ui->cob_family->currentText(),style,12);
-    if(font == QFont()) {
-        auto path = font::TrueTypeManager::getPath(*meta);;
-        if(path.empty()) return;
-        QFontDatabase::addApplicationFont(path.c_str());
-    }
-    font = QFontDatabase::font(ui->cob_family->currentText(),style,12);
-    if(font == QFont())
-
-    ui->edt_preview->setFont(font);
-    */
     ui->w_selector->setCanvasFont(&_tt);
 }

@@ -29,7 +29,7 @@
       <enum>Qt::Orientation::Horizontal</enum>
      </property>
      <widget class="CharsetCanvas" name="canvas" native="true"/>
-     <widget class="QListWidget" name="list_block">
+     <widget class="QListWidget" name="list_page">
       <property name="maximumSize">
        <size>
         <width>220</width>
@@ -47,7 +47,7 @@
      <item>
       <widget class="QLabel" name="lab_selected">
        <property name="text">
-        <string>Selected: %d/%d</string>
+        <string>已选择: %1 / %2</string>
        </property>
       </widget>
      </item>
